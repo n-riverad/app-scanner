@@ -28,7 +28,12 @@
         }
 
         /* --- Estilos de la Pantalla del Menú --- */
-        #menu-page h1 { font-size: 2rem; margin-bottom: 40px; }
+        #menu-page h1 { font-size: 2rem; margin-bottom: 40px; margin-top: 0; }
+        .logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 20px;
+        }
         .menu-button {
             font-size: 1.3rem;
             padding: 20px;
@@ -42,14 +47,6 @@
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
-        /* --- CÓDIGO A AÑADIR PARA EL LOGO --- */
-        .logo {
-            max-width: 200px; /* Ancho máximo del logo */
-            height: auto;     /* Mantiene la proporción original */
-            margin-bottom: 20px; /* Espacio entre el logo y el título */
-        }
-        
         .menu-button:last-child { background-color: #28a745; }
 
         /* --- Estilos de la Pantalla del Escáner --- */
@@ -72,13 +69,11 @@
 <body>
 
     <div id="menu-page" class="page">
-
-         <img src="logo-particiones.jpg" alt="Logo de la Empresa" class="logo">
-        
+        <img src="logo-particiones.jpg" alt="Logo de la Empresa" class="logo">
         <h1>Particiones Scanner</h1>
-        <button class="menu-button" data-mode="producto">Escanear Ingreso</button>
+        <button class="menu-button" data-mode="ingreso">Escanear Ingreso</button>
         <button class="menu-button" data-mode="despacho">Escanear Despacho</button>
-        </div>
+    </div>
 
     <div id="scanner-page" class="page hidden">
         <button class="back-button" id="go-back">⬅️</button>
@@ -90,92 +85,86 @@
     </div>
 
     <script>
-        // --- REFERENCIAS A ELEMENTOS Y PÁGINAS ---
+        // --- REFERENCIAS A ELEMENTOS ---
         const menuPage = document.getElementById('menu-page');
         const scannerPage = document.getElementById('scanner-page');
         const menuButtons = document.querySelectorAll('.menu-button');
         const backButton = document.getElementById('go-back');
-        
         const form = document.getElementById('dataForm');
         const input = document.getElementById('scanInput');
         const status = document.getElementById('status');
         const scannerTitle = document.getElementById('scanner-title');
         
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztW8E1sTI-nur-J7xt-3pCoAOT_kQKOipsWMVRwSc6235TJGLSnS8QrAOFu72hb_OS1Q/exec'; // ¡IMPORTANTE! Revisa que tu URL sea la correcta
+        // ¡IMPORTANTE! Reemplaza esto con la URL de tu Web App de Google
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztW8E1sTI-nur-J7xt-3pCoAOT_kQKOipsWMVRwSc6235TJGLSnS8QrAOFu72hb_OS1Q/exec';
         
         let currentMode = '';
 
-        // --- LÓGICA DE NAVEGACIÓN ---
+        // --- LÓGICA DE NAVEGACIÓN Y BOTÓN DE RETROCESO ---
+        window.addEventListener('popstate', (event) => {
+            if (!event.state || event.state.page === 'menu') {
+                navigateTo('menu', false);
+            }
+        });
 
-        // Función para cambiar de pantalla
-        function navigateTo(page) {
+        window.addEventListener('load', () => {
+            history.replaceState({ page: 'menu' }, 'Menú', '#menu');
+            updateConnectionStatus();
+        });
+
+        function navigateTo(page, addToHistory = true) {
             if (page === 'scanner') {
                 menuPage.classList.add('hidden');
                 scannerPage.classList.remove('hidden');
-                input.focus(); // Enfocar el campo de texto al entrar
-                updateScannerUI(); // Actualizar título y placeholder
-                updateConnectionStatus(); // Actualizar estado de conexión
-            } else { // Volver al menú
+                if (addToHistory) {
+                    history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
+                }
+                input.focus();
+                updateScannerUI();
+                updateConnectionStatus();
+            } else {
                 scannerPage.classList.add('hidden');
                 menuPage.classList.remove('hidden');
             }
         }
         
-        // Asignar eventos a los botones del menú
         menuButtons.forEach(button => {
             button.addEventListener('click', () => {
-                currentMode = button.getAttribute('data-mode'); // 'producto' o 'despacho'
+                currentMode = button.getAttribute('data-mode');
                 navigateTo('scanner');
             });
         });
 
-        // Evento para el botón de retroceso
-        backButton.addEventListener('click', () => navigateTo('menu'));
+        backButton.addEventListener('click', () => {
+            history.back();
+        });
 
-        // Función para actualizar la interfaz del escáner según el modo
         function updateScannerUI() {
             if (currentMode === 'ingreso') {
                 scannerTitle.textContent = 'Escanear Ingreso';
                 input.placeholder = 'Esperando código del producto...';
             } else if (currentMode === 'despacho') {
                 scannerTitle.textContent = 'Escanear Despacho';
-                input.placeholder = 'Esperando código de despacho...';
+                input.placeholder = 'Esperando tarja de despacho...';
             }
         }
-
-        // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN (SOLUCIONADO) ---
         
-        // Función para actualizar el mensaje de estado de conexión
+        // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN ---
         function updateConnectionStatus() {
             const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
             if (navigator.onLine) {
                 status.textContent = 'En línea';
                 status.style.color = 'green';
-                syncPendingScans(); // Intentar sincronizar al volver a estar en línea
+                syncPendingScans();
             } else {
                 status.textContent = `Sin conexión (${pendingScans.length} pendientes)`;
                 status.style.color = 'grey';
             }
         }
 
-        window.addEventListener('load', updateConnectionStatus);
         window.addEventListener('online', updateConnectionStatus);
         window.addEventListener('offline', updateConnectionStatus);
-        
-        // La lógica de `sendData`, `syncPendingScans` y `saveScanLocally` no cambia.
-        // La pego aquí para que tengas el bloque completo.
-        function sendData(scanObject) { /* ... */ }
-        async function syncPendingScans() { /* ... */ }
-        function saveScanLocally(scanObject) { /* ... */ }
-        form.addEventListener('submit', function(e) { /* ... */ });
 
-        // (Pega aquí las funciones sendData, syncPendingScans, saveScanLocally y el form.addEventListener del código anterior,
-        // ya que esas no necesitan cambios y son bastante largas)
-        
-    </script>
-
-    <script>
-        // (Contenido del script anterior)
         function sendData(scanObject) {
             return fetch(WEB_APP_URL, {
                 method: 'POST',
@@ -195,11 +184,11 @@
             status.style.color = 'orange';
 
             while (pendingScans.length > 0) {
-                const scan = pendingScans.shift(); // Tomar y remover el primer elemento
+                const scan = pendingScans.shift();
                 try {
                     await sendData(scan);
                 } catch (error) {
-                    pendingScans.unshift(scan); // Si falla, lo devolvemos al inicio de la lista
+                    pendingScans.unshift(scan);
                     status.textContent = `Error de conexión. ${pendingScans.length} pendientes.`;
                     status.style.color = 'red';
                     break;
@@ -210,7 +199,6 @@
             if(pendingScans.length === 0) { 
                 status.textContent = '¡Sincronizado!'; 
                 status.style.color = 'green';
-                // Espera un momento y vuelve a mostrar el estado de conexión normal
                 setTimeout(updateConnectionStatus, 2000);
             }
         }
@@ -236,7 +224,7 @@
                     .then(() => {
                         status.textContent = `Enviado: ${scanObject.value}`;
                         status.style.color = 'green';
-                        setTimeout(updateConnectionStatus, 2000); // Vuelve al estado normal
+                        setTimeout(updateConnectionStatus, 2000);
                     })
                     .catch(() => saveScanLocally(scanObject));
             } else {
@@ -246,13 +234,14 @@
             input.focus();
         });
 
-        // --- RESTO DEL CÓDIGO ---
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js'); }); }
+        // --- REGISTRO DEL SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then(reg => {
+                    console.log('Service Worker registrado.', reg);
+                });
+            });
+        }
     </script>
 </body>
 </html>
-
-
-
-
-
