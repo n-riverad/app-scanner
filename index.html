@@ -42,6 +42,14 @@
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
+        
+        /* --- CÓDIGO A AÑADIR PARA EL LOGO --- */
+        .logo {
+            max-width: 200px; /* Ancho máximo del logo */
+            height: auto;     /* Mantiene la proporción original */
+            margin-bottom: 20px; /* Espacio entre el logo y el título */
+        }
+        
         .menu-button:last-child { background-color: #28a745; }
 
         /* --- Estilos de la Pantalla del Escáner --- */
@@ -64,6 +72,9 @@
 <body>
 
     <div id="menu-page" class="page">
+
+         <img src="logo.png" alt="Logo de la Empresa" class="logo">
+        
         <h1>Particiones Scanner</h1>
         <button class="menu-button" data-mode="producto">Escanear Producto</button>
         <button class="menu-button" data-mode="despacho">Escanear Despacho</button>
@@ -240,3 +251,4 @@
     </script>
 </body>
 </html>
+
