@@ -134,12 +134,12 @@
 
         // Función para actualizar la interfaz del escáner según el modo
         function updateScannerUI() {
-            if (currentMode === 'producto') {
-                scannerTitle.textContent = 'Escanear Producto';
+            if (currentMode === 'ingreso') {
+                scannerTitle.textContent = 'Escanear Ingreso';
                 input.placeholder = 'Esperando código del producto...';
             } else if (currentMode === 'despacho') {
                 scannerTitle.textContent = 'Escanear Despacho';
-                input.placeholder = 'Esperando tarja de despacho...';
+                input.placeholder = 'Esperando código de despacho...';
             }
         }
 
@@ -251,6 +251,7 @@
     </script>
 </body>
 </html>
+
 
 
 
