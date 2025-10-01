@@ -1,16 +1,18 @@
 {
   "name": "Particiones Scanner",
-  "short_name": "Scanner",
+  "short_name": "PSA Scan",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
+  "orientation": "portrait-primary",
   "description": "Aplicación para escanear productos y enviarlos a Google Sheets.",
   "icons": [
     {
       "src": "icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
