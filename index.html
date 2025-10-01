@@ -1,125 +1,136 @@
-<script>
-    // --- CONFIGURACIÓN ---
-    const form = document.getElementById('dataForm');
-    const input = document.getElementById('scanInput');
-    const status = document.getElementById('status');
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztW8E1sTI-nur-J7xt-3pCoAOT_kQKOipsWMVRwSc6235TJGLSnS8QrAOFu72hb_OS1Q/exec'; // Asegúrate de que tu URL esté aquí
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particiones Scanner</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; justify-content: center; align-items: center; text-align: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .container { padding: 20px; }
+        h1 { color: #333; }
+        #scanInput { font-size: 1.2rem; padding: 15px; width: 85vw; max-width: 400px; text-align: center; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px; }
+        #scanInput:focus { border-color: #007bff; outline: none; }
+        #status { font-size: 1rem; min-height: 24px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Escanear Producto</h1>
+        <form id="dataForm" onsubmit="return false;">
+            <input type="text" id="scanInput" placeholder="Esperando escaneo..." autofocus autocomplete="off">
+        </form>
+        <p id="status">Esperando conexión...</p>
+    </div>
 
-    // --- LÓGICA DE SINCRONIZACIÓN ---
+    <script>
+        // --- CONFIGURACIÓN ---
+        const form = document.getElementById('dataForm');
+        const input = document.getElementById('scanInput');
+        const status = document.getElementById('status');
+        // ¡IMPORTANTE! Pega aquí la URL de tu Web App de Google Apps Script
+        const WEB_APP_URL = 'URL_DE_TU_APPS_SCRIPT';
 
-    // 1. Intenta sincronizar los datos pendientes en cuanto se carga la app
-    window.addEventListener('load', () => {
-        syncPendingScans();
-    });
-
-    // 2. Detecta cuando el dispositivo vuelve a tener conexión
-    window.addEventListener('online', () => {
-        status.textContent = 'En línea. Sincronizando...';
-        status.style.color = 'orange';
-        syncPendingScans();
-    });
-    
-    // 3. Detecta cuando el dispositivo pierde la conexión
-    window.addEventListener('offline', () => {
-        status.textContent = 'Sin conexión. Los escaneos se guardarán localmente.';
-        status.style.color = 'grey';
-    });
-
-    // Función para enviar datos al Google Sheet
-    function sendData(scannedValue) {
-        // Devuelve una promesa para saber si tuvo éxito o no
-        return fetch(WEB_APP_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            body: new URLSearchParams({ 'scannedData': scannedValue })
+        // --- LÓGICA DE SINCRONIZACIÓN ---
+        window.addEventListener('load', () => {
+            if (navigator.onLine) {
+                status.textContent = 'En línea.';
+                status.style.color = 'green';
+            } else {
+                status.textContent = 'Sin conexión.';
+                status.style.color = 'grey';
+            }
+            syncPendingScans();
         });
-    }
 
-    // Función que revisa la "bandeja de salida" y envía los datos pendientes
-    async function syncPendingScans() {
-        const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
-        if (pendingScans.length === 0) {
-            console.log('No hay escaneos pendientes.');
-            return;
+        window.addEventListener('online', () => {
+            status.textContent = 'En línea. Sincronizando...';
+            status.style.color = 'orange';
+            syncPendingScans();
+        });
+        
+        window.addEventListener('offline', () => {
+            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
+            status.textContent = `Sin conexión. (${pendingScans.length} pendiente(s))`;
+            status.style.color = 'grey';
+        });
+
+        function sendData(scannedValue) {
+            return fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: new URLSearchParams({ 'scannedData': scannedValue })
+            });
         }
 
-        console.log(`Sincronizando ${pendingScans.length} escaneos pendientes...`);
-        status.textContent = `Sincronizando ${pendingScans.length} escaneos...`;
-        status.style.color = 'orange';
+        async function syncPendingScans() {
+            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
+            if (pendingScans.length === 0) return;
 
-        // Usamos un bucle while para procesar la cola de forma segura
-        while (pendingScans.length > 0) {
-            const scan = pendingScans[0]; // Tomamos el primer elemento
-            try {
-                await sendData(scan);
-                // Si el envío fue exitoso (no hubo error), lo quitamos de la lista
-                pendingScans.shift(); 
-            } catch (error) {
-                console.error('Fallo al sincronizar. Se reintentará más tarde.', error);
-                status.textContent = `Error de conexión. ${pendingScans.length} pendientes.`;
-                status.style.color = 'red';
-                // Si falla, detenemos el bucle para no perder datos y reintentar luego
-                break;
+            status.textContent = `Sincronizando ${pendingScans.length} escaneos...`;
+            status.style.color = 'orange';
+
+            while (pendingScans.length > 0) {
+                const scan = pendingScans[0];
+                try {
+                    await sendData(scan);
+                    pendingScans.shift(); 
+                } catch (error) {
+                    status.textContent = `Error de conexión. ${pendingScans.length} pendientes.`;
+                    status.style.color = 'red';
+                    break;
+                }
+            }
+
+            localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
+            
+            if(pendingScans.length === 0){
+                status.textContent = '¡Sincronizado!';
+                status.style.color = 'green';
             }
         }
-
-        // Guardamos la lista actualizada en el almacenamiento local
-        localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
         
-        if(pendingScans.length === 0){
-            status.textContent = '¡Sincronizado!';
-            status.style.color = 'green';
-        }
-    }
-    
-    // Función para guardar un escaneo en la "bandeja de salida" local
-    function saveScanLocally(scannedValue) {
-        const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
-        pendingScans.push(scannedValue);
-        localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
-        
-        status.textContent = `Guardado localmente (${pendingScans.length} pendiente(s))`;
-        status.style.color = 'blue';
-    }
-
-
-    // --- LÓGICA DEL FORMULARIO (MODIFICADA) ---
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const scannedValue = input.value;
-        if (!scannedValue) return;
-
-        // Comprueba si hay conexión a internet
-        if (navigator.onLine) {
-            status.textContent = 'Enviando...';
-            status.style.color = 'orange';
-            sendData(scannedValue)
-                .then(() => {
-                    status.textContent = `Enviado: ${scannedValue}`;
-                    status.style.color = 'green';
-                    // Al enviar con éxito, también intentamos sincronizar por si había algo pendiente
-                    syncPendingScans();
-                })
-                .catch(() => {
-                    // Si falla el envío estando "en línea" (ej: red inestable), lo guardamos localmente
-                    saveScanLocally(scannedValue);
-                });
-        } else {
-            // Si no hay conexión, simplemente lo guardamos
-            saveScanLocally(scannedValue);
+        function saveScanLocally(scannedValue) {
+            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
+            pendingScans.push(scannedValue);
+            localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
+            
+            status.textContent = `Guardado localmente (${pendingScans.length} pendiente(s))`;
+            status.style.color = 'blue';
         }
 
-        input.value = '';
-        input.focus();
-    });
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const scannedValue = input.value;
+            if (!scannedValue) return;
 
-    // --- CÓDIGO EXTRA ---
-    document.body.addEventListener('click', () => { input.focus(); });
-    // Registrar el Service Worker para la PWA
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js');
+            if (navigator.onLine) {
+                status.textContent = 'Enviando...';
+                status.style.color = 'orange';
+                sendData(scannedValue)
+                    .then(() => {
+                        status.textContent = `Enviado: ${scannedValue}`;
+                        status.style.color = 'green';
+                        syncPendingScans();
+                    })
+                    .catch(() => {
+                        saveScanLocally(scannedValue);
+                    });
+            } else {
+                saveScanLocally(scannedValue);
+            }
+
+            input.value = '';
+            input.focus();
         });
-    }
-</script>
 
+        document.body.addEventListener('click', () => { input.focus(); });
+        
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</body>
+</html>
