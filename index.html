@@ -20,11 +20,10 @@
             position: absolute;
             top: 0;
             left: 0;
-            transition: opacity 0.3s, visibility 0.3s;
+            /* transition: opacity 0.3s, visibility 0.3s; */ /* Animation removed for a more reliable display:none approach */
         }
         .hidden {
-            opacity: 0;
-            visibility: hidden;
+            display: none;
         }
 
         /* --- Estilos de la Pantalla del Menú --- */
@@ -85,163 +84,209 @@
     </div>
 
     <script>
-        // --- REFERENCIAS A ELEMENTOS ---
-        const menuPage = document.getElementById('menu-page');
-        const scannerPage = document.getElementById('scanner-page');
-        const menuButtons = document.querySelectorAll('.menu-button');
-        const backButton = document.getElementById('go-back');
-        const form = document.getElementById('dataForm');
-        const input = document.getElementById('scanInput');
-        const status = document.getElementById('status');
-        const scannerTitle = document.getElementById('scanner-title');
-        
-        // ¡IMPORTANTE! Reemplaza esto con la URL de tu Web App de Google
-        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztW8E1sTI-nur-J7xt-3pCoAOT_kQKOipsWMVRwSc6235TJGLSnS8QrAOFu72hb_OS1Q/exec';
-        
-        let currentMode = '';
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- CONFIGURACIÓN ---
+            const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbztW8E1sTI-nur-J7xt-3pCoAOT_kQKOipsWMVRwSc6235TJGLSnS8QrAOFu72hb_OS1Q/exec';
 
-        // --- LÓGICA DE NAVEGACIÓN Y BOTÓN DE RETROCESO ---
-        window.addEventListener('popstate', (event) => {
-            if (!event.state || event.state.page === 'menu') {
-                navigateTo('menu', false);
-            }
-        });
+            // --- REFERENCIAS A ELEMENTOS DEL DOM ---
+            const ui = {
+                menuPage: document.getElementById('menu-page'),
+                scannerPage: document.getElementById('scanner-page'),
+                menuButtons: document.querySelectorAll('.menu-button'),
+                backButton: document.getElementById('go-back'),
+                form: document.getElementById('dataForm'),
+                input: document.getElementById('scanInput'),
+                status: document.getElementById('status'),
+                scannerTitle: document.getElementById('scanner-title'),
+            };
 
-        window.addEventListener('load', () => {
-            history.replaceState({ page: 'menu' }, 'Menú', '#menu');
-            updateConnectionStatus();
-        });
+            // --- ESTADO DE LA APLICACIÓN ---
+            const appState = {
+                currentMode: '',
+                isSyncing: false,
+            };
 
-        function navigateTo(page, addToHistory = true) {
-            if (page === 'scanner') {
-                menuPage.classList.add('hidden');
-                scannerPage.classList.remove('hidden');
-                if (addToHistory) {
-                    history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
+            // --- LÓGICA DE NAVEGACIÓN ---
+            const navigateTo = (page, addToHistory = true) => {
+                if (page === 'scanner') {
+                    ui.menuPage.classList.add('hidden');
+                    ui.scannerPage.classList.remove('hidden');
+                    if (addToHistory) {
+                        history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
+                    }
+                    ui.input.focus();
+                    updateScannerUI();
+                    updateConnectionStatus();
+                } else {
+                    ui.scannerPage.classList.add('hidden');
+                    ui.menuPage.classList.remove('hidden');
                 }
-                input.focus();
-                updateScannerUI();
-                updateConnectionStatus();
-            } else {
-                scannerPage.classList.add('hidden');
-                menuPage.classList.remove('hidden');
-            }
-        }
-        
-        menuButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                currentMode = button.getAttribute('data-mode');
-                navigateTo('scanner');
-            });
-        });
+            };
 
-        backButton.addEventListener('click', () => {
-            history.back();
-        });
+            const updateScannerUI = () => {
+                const titles = {
+                    ingreso: 'Escanear Ingreso',
+                    despacho: 'Escanear Despacho'
+                };
+                const placeholders = {
+                    ingreso: 'Esperando código del producto...',
+                    despacho: 'Esperando tarja de despacho...'
+                };
+                ui.scannerTitle.textContent = titles[appState.currentMode] || 'Escanear';
+                ui.input.placeholder = placeholders[appState.currentMode] || '';
+            };
 
-        function updateScannerUI() {
-            if (currentMode === 'ingreso') {
-                scannerTitle.textContent = 'Escanear Ingreso';
-                input.placeholder = 'Esperando código del producto...';
-            } else if (currentMode === 'despacho') {
-                scannerTitle.textContent = 'Escanear Despacho';
-                input.placeholder = 'Esperando tarja de despacho...';
-            }
-        }
-        
-        // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN ---
-        function updateConnectionStatus() {
-            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
-            if (navigator.onLine) {
-                status.textContent = 'En línea';
-                status.style.color = 'green';
-                syncPendingScans();
-            } else {
-                status.textContent = `Sin conexión (${pendingScans.length} pendientes)`;
-                status.style.color = 'grey';
-            }
-        }
+            // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN ---
+            const getPendingScans = () => JSON.parse(localStorage.getItem('pendingScans')) || [];
+            const setPendingScans = (scans) => localStorage.setItem('pendingScans', JSON.stringify(scans));
 
-        window.addEventListener('online', updateConnectionStatus);
-        window.addEventListener('offline', updateConnectionStatus);
+            const updateStatus = (message, color) => {
+                ui.status.textContent = message;
+                ui.status.style.color = color;
+            };
 
-        function sendData(scanObject) {
-            return fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: new URLSearchParams({ 
-                    'scannedData': scanObject.value,
-                    'scanType': scanObject.type 
-                })
-            });
-        }
-        
-        async function syncPendingScans() {
-            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
-            if (!navigator.onLine || pendingScans.length === 0) return;
-            
-            status.textContent = `Sincronizando ${pendingScans.length} escaneos...`;
-            status.style.color = 'orange';
-
-            while (pendingScans.length > 0) {
-                const scan = pendingScans.shift();
-                try {
-                    await sendData(scan);
-                } catch (error) {
-                    pendingScans.unshift(scan);
-                    status.textContent = `Error de conexión. ${pendingScans.length} pendientes.`;
-                    status.style.color = 'red';
-                    break;
+            const updateConnectionStatus = () => {
+                if (appState.isSyncing) return;
+                const pendingCount = getPendingScans().length;
+                if (navigator.onLine) {
+                    updateStatus('En línea', 'green');
+                    if (pendingCount > 0) {
+                        syncPendingScans();
+                    }
+                } else {
+                    updateStatus(`Sin conexión (${pendingCount} pendientes)`, 'grey');
                 }
-            }
+            };
 
-            localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
-            if(pendingScans.length === 0) { 
-                status.textContent = '¡Sincronizado!'; 
-                status.style.color = 'green';
-                setTimeout(updateConnectionStatus, 2000);
-            }
-        }
-
-        function saveScanLocally(scanObject) {
-            const pendingScans = JSON.parse(localStorage.getItem('pendingScans')) || [];
-            pendingScans.push(scanObject);
-            localStorage.setItem('pendingScans', JSON.stringify(pendingScans));
-            status.textContent = `Guardado localmente (${pendingScans.length} pendiente(s))`;
-            status.style.color = 'blue';
-        }
-
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const scannedValue = input.value;
-            if (!scannedValue) return;
-
-            const scanObject = { value: scannedValue, type: currentMode };
-
-            if (navigator.onLine) {
-                status.textContent = 'Enviando...';
-                sendData(scanObject)
-                    .then(() => {
-                        status.textContent = `Enviado: ${scanObject.value}`;
-                        status.style.color = 'green';
-                        setTimeout(updateConnectionStatus, 2000);
+            const sendData = async (scanObject) => {
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // Mantenemos no-cors como en el original
+                    body: new URLSearchParams({
+                        'scannedData': scanObject.value,
+                        'scanType': scanObject.type
                     })
-                    .catch(() => saveScanLocally(scanObject));
-            } else {
-                saveScanLocally(scanObject);
-            }
-            input.value = '';
-            input.focus();
-        });
-
-        // --- REGISTRO DEL SERVICE WORKER ---
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').then(reg => {
-                    console.log('Service Worker registrado.', reg);
                 });
-            });
-        }
+                 // Con 'no-cors', no podemos verificar el status de la respuesta.
+                 // Asumimos éxito si la solicitud no lanza una excepción (ej. por falta de red).
+                 // El manejo de errores se basa en el catch del llamado a sendData.
+            };
+
+            const syncPendingScans = async () => {
+                if (appState.isSyncing || !navigator.onLine) return;
+
+                let pendingScans = getPendingScans();
+                if (pendingScans.length === 0) return;
+
+                appState.isSyncing = true;
+                updateStatus(`Sincronizando ${pendingScans.length} escaneos...`, 'orange');
+
+                const initialCount = pendingScans.length;
+
+                // Usamos una copia del array para iterar de forma segura
+                for (const scan of [...pendingScans]) {
+                    try {
+                        await sendData(scan);
+
+                        // Si tiene éxito, lo eliminamos de la lista local usando su timestamp único
+                        const currentScans = getPendingScans();
+                        const updatedScans = currentScans.filter(s => s.timestamp !== scan.timestamp);
+                        setPendingScans(updatedScans);
+
+                        updateStatus(`Sincronizando ${updatedScans.length}/${initialCount}...`, 'orange');
+                    } catch (error) {
+                        console.error('Fallo la sincronización, se reintentará más tarde:', error);
+                        updateStatus(`Error de conexión. ${getPendingScans().length} pendientes.`, 'red');
+                        appState.isSyncing = false;
+                        return; // Termina el proceso si falla uno para evitar un bucle infinito
+                    }
+                }
+
+                appState.isSyncing = false;
+
+                if (getPendingScans().length === 0) {
+                    updateStatus('¡Sincronizado!', 'green');
+                } else {
+                    // Si aún quedan, es porque se añadieron nuevos durante la sincronización
+                    updateConnectionStatus();
+                }
+
+                // Re-evaluar el estado de la conexión después de un par de segundos
+                setTimeout(updateConnectionStatus, 2000);
+            };
+
+            const saveScanLocally = (scanObject) => {
+                const pendingScans = getPendingScans();
+                pendingScans.push(scanObject);
+                setPendingScans(pendingScans);
+                updateStatus(`Guardado localmente (${pendingScans.length} pendiente(s))`, 'blue');
+            };
+
+            const handleFormSubmit = async (e) => {
+                e.preventDefault();
+                const scannedValue = ui.input.value.trim();
+                if (!scannedValue) return;
+
+                // Añadimos un timestamp para identificar unívocamente cada escaneo
+                const scanObject = { value: scannedValue, type: appState.currentMode, timestamp: new Date().toISOString() };
+
+                ui.input.value = '';
+                ui.input.focus();
+
+                if (navigator.onLine) {
+                    updateStatus('Enviando...', 'orange');
+                    try {
+                        await sendData(scanObject);
+                        updateStatus(`Enviado: ${scanObject.value}`, 'green');
+                        // Intenta sincronizar por si había algo pendiente
+                        setTimeout(syncPendingScans, 100);
+                    } catch (error) {
+                        console.error('Error al enviar, guardando localmente:', error);
+                        saveScanLocally(scanObject);
+                    }
+                } else {
+                    saveScanLocally(scanObject);
+                }
+            };
+
+            // --- INICIALIZACIÓN Y EVENT LISTENERS ---
+            const init = () => {
+                // Navegación
+                ui.menuButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        appState.currentMode = button.getAttribute('data-mode');
+                        navigateTo('scanner');
+                    });
+                });
+
+                ui.backButton.addEventListener('click', () => history.back());
+                window.addEventListener('popstate', (event) => {
+                    if (!event.state || event.state.page === 'menu') {
+                        navigateTo('menu', false);
+                    }
+                });
+
+                // Lógica de la app
+                ui.form.addEventListener('submit', handleFormSubmit);
+                window.addEventListener('online', updateConnectionStatus);
+                window.addEventListener('offline', updateConnectionStatus);
+
+                // Estado inicial
+                history.replaceState({ page: 'menu' }, 'Menú', '#menu');
+                updateConnectionStatus();
+
+                // Service Worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/sw.js').then(reg => {
+                        console.log('Service Worker registrado.', reg);
+                    }).catch(err => {
+                        console.error('Fallo en el registro del Service Worker:', err);
+                    });
+                }
+            };
+
+            init();
+        });
     </script>
 </body>
 </html>
