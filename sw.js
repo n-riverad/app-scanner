@@ -1,7 +1,10 @@
-const CACHE_NAME = 'particiones-scanner-cache-v1';
+const CACHE_NAME = 'particiones-scanner-cache-v2';
 const URLS_TO_CACHE = [
   '/',
-  'index.html'
+  'index.html',
+  'logo-particiones.jpg',
+  'logo-500x500.png',
+  'manifest.json'
 ];
 
 // Instala el Service Worker y guarda los archivos base en el caché
