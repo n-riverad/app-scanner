@@ -6,62 +6,156 @@
     <title>Particiones Scanner</title>
     <link rel="manifest" href="manifest.json">
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+        /* --- General & Variables --- */
+        :root {
+            --primary-color: #007AFF; /* iOS Blue */
+            --secondary-color: #34C759; /* iOS Green */
+            --background-color: #F2F2F7;
+            --header-background: #FFFFFF;
+            --text-color: #1C1C1E;
+            --subtle-text-color: #8A8A8D;
+            --border-color: #C6C6C8;
+            --status-syncing: #FF9500; /* iOS Orange */
+            --status-error: #FF3B30;   /* iOS Red */
+            --status-success: #34C759; /* iOS Green */
+            --status-offline: #8A8A8D; /* iOS Gray */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh */
+        }
+
+        /* --- Layout & Pages --- */
         .page {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            height: 100vh;
             width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
+            height: 100vh;
             position: absolute;
             top: 0;
             left: 0;
-            /* transition: opacity 0.3s, visibility 0.3s; */ /* Animation removed for a more reliable display:none approach */
+            box-sizing: border-box;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
         }
-        .hidden {
-            display: none;
+        .page.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; /* Important for preventing interaction */
         }
 
-        /* --- Estilos de la Pantalla del Menú --- */
-        #menu-page h1 { font-size: 2rem; margin-bottom: 40px; margin-top: 0; }
+        /* --- Menu Page --- */
+        #menu-page {
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        #menu-page h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
         .logo {
-            max-width: 200px;
+            max-width: 150px; /* Slightly smaller logo */
             height: auto;
             margin-bottom: 20px;
+            border-radius: 22%; /* Squircle shape like iOS icons */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
         .menu-button {
-            font-size: 1.3rem;
-            padding: 20px;
-            width: 90%;
-            max-width: 350px;
-            margin-bottom: 20px;
+            font-size: 1.1rem;
+            padding: 18px 25px;
+            width: 100%;
+            max-width: 380px;
+            margin-bottom: 15px;
             border: none;
-            border-radius: 12px;
-            background-color: #007bff;
-            color: white;
+            border-radius: 10px;
+            background-color: var(--header-background);
+            color: var(--primary-color);
             cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: left;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .menu-button:last-child { background-color: #28a745; }
+        .menu-button:last-child {
+            color: var(--secondary-color);
+        }
+        .menu-button .icon {
+            font-size: 1.3rem;
+            margin-right: 15px;
+        }
+         .menu-button .arrow {
+            font-size: 1.2rem;
+            color: var(--subtle-text-color);
+        }
 
-        /* --- Estilos de la Pantalla del Escáner --- */
-        #scanner-page h1 { font-size: 1.5rem; }
-        #scanInput { font-size: 1.2rem; padding: 15px; width: 100%; max-width: 400px; text-align: center; border: 2px solid #ccc; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; }
-        #scanInput:focus { outline: none; border-color: #007bff; }
-        #status { font-size: 1rem; min-height: 24px; font-weight: bold; }
+
+        /* --- Scanner Page --- */
+        #scanner-page {
+            background-color: var(--background-color);
+        }
+        .scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: var(--header-background);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .scanner-header h1 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            text-align: center;
+            flex-grow: 1; /* Allows the title to center properly */
+        }
         .back-button {
-            position: absolute;
-            top: 20px;
-            left: 20px;
             font-size: 1.5rem;
             background: none;
             border: none;
             cursor: pointer;
-            color: #555;
+            color: var(--primary-color);
+            padding: 5px 10px;
+        }
+        .scanner-content {
+            padding: 30px 20px;
+            text-align: center;
+        }
+        #scanInput {
+            font-size: 1.2rem;
+            padding: 18px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-sizing: border-box;
+            background-color: var(--header-background);
+        }
+        #scanInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+        }
+        #status {
+            font-size: 1rem;
+            min-height: 24px;
+            font-weight: 500;
+            transition: color 0.3s;
         }
     </style>
 </head>
@@ -70,17 +164,27 @@
     <div id="menu-page" class="page">
         <img src="logo-particiones.jpg" alt="Logo de la Empresa" class="logo">
         <h1>Particiones Scanner</h1>
-        <button class="menu-button" data-mode="ingreso">Escanear Ingreso</button>
-        <button class="menu-button" data-mode="despacho">Escanear Despacho</button>
+        <button class="menu-button" data-mode="ingreso">
+            <div><span class="icon">📦</span>Escanear Ingreso</div>
+            <span class="arrow">›</span>
+        </button>
+        <button class="menu-button" data-mode="despacho">
+            <div><span class="icon">🚚</span>Escanear Despacho</div>
+            <span class="arrow">›</span>
+        </button>
     </div>
 
     <div id="scanner-page" class="page hidden">
-        <button class="back-button" id="go-back">⬅️</button>
-        <h1 id="scanner-title"></h1>
-        <form id="dataForm" onsubmit="return false;">
-            <input type="text" id="scanInput" autofocus autocomplete="off">
-        </form>
-        <p id="status"></p>
+        <header class="scanner-header">
+            <button class="back-button" id="go-back">‹</button>
+            <h1 id="scanner-title"></h1>
+        </header>
+        <div class="scanner-content">
+            <form id="dataForm" onsubmit="return false;">
+                <input type="text" id="scanInput" autofocus autocomplete="off">
+            </form>
+            <p id="status"></p>
+        </div>
     </div>
 
     <script>
@@ -108,18 +212,19 @@
 
             // --- LÓGICA DE NAVEGACIÓN ---
             const navigateTo = (page, addToHistory = true) => {
+                const pageToShow = page === 'scanner' ? ui.scannerPage : ui.menuPage;
+                const pageToHide = page === 'scanner' ? ui.menuPage : ui.scannerPage;
+
+                pageToHide.classList.add('hidden');
+                pageToShow.classList.remove('hidden');
+
                 if (page === 'scanner') {
-                    ui.menuPage.classList.add('hidden');
-                    ui.scannerPage.classList.remove('hidden');
                     if (addToHistory) {
                         history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
                     }
                     ui.input.focus();
                     updateScannerUI();
                     updateConnectionStatus();
-                } else {
-                    ui.scannerPage.classList.add('hidden');
-                    ui.menuPage.classList.remove('hidden');
                 }
             };
 
@@ -149,12 +254,12 @@
                 if (appState.isSyncing) return;
                 const pendingCount = getPendingScans().length;
                 if (navigator.onLine) {
-                    updateStatus('En línea', 'green');
+                    updateStatus('En línea', 'var(--status-success)');
                     if (pendingCount > 0) {
                         syncPendingScans();
                     }
                 } else {
-                    updateStatus(`Sin conexión (${pendingCount} pendientes)`, 'grey');
+                    updateStatus(`Sin conexión (${pendingCount} pendientes)`, 'var(--status-offline)');
                 }
             };
 
@@ -179,7 +284,7 @@
                 if (pendingScans.length === 0) return;
 
                 appState.isSyncing = true;
-                updateStatus(`Sincronizando ${pendingScans.length} escaneos...`, 'orange');
+                updateStatus(`Sincronizando ${pendingScans.length} escaneos...`, 'var(--status-syncing)');
 
                 const initialCount = pendingScans.length;
 
@@ -193,10 +298,10 @@
                         const updatedScans = currentScans.filter(s => s.timestamp !== scan.timestamp);
                         setPendingScans(updatedScans);
 
-                        updateStatus(`Sincronizando ${updatedScans.length}/${initialCount}...`, 'orange');
+                        updateStatus(`Sincronizando ${updatedScans.length}/${initialCount}...`, 'var(--status-syncing)');
                     } catch (error) {
                         console.error('Fallo la sincronización, se reintentará más tarde:', error);
-                        updateStatus(`Error de conexión. ${getPendingScans().length} pendientes.`, 'red');
+                        updateStatus(`Error de conexión. ${getPendingScans().length} pendientes.`, 'var(--status-error)');
                         appState.isSyncing = false;
                         return; // Termina el proceso si falla uno para evitar un bucle infinito
                     }
@@ -205,7 +310,7 @@
                 appState.isSyncing = false;
 
                 if (getPendingScans().length === 0) {
-                    updateStatus('¡Sincronizado!', 'green');
+                    updateStatus('¡Sincronizado!', 'var(--status-success)');
                 } else {
                     // Si aún quedan, es porque se añadieron nuevos durante la sincronización
                     updateConnectionStatus();
@@ -219,7 +324,7 @@
                 const pendingScans = getPendingScans();
                 pendingScans.push(scanObject);
                 setPendingScans(pendingScans);
-                updateStatus(`Guardado localmente (${pendingScans.length} pendiente(s))`, 'blue');
+                updateStatus(`Guardado localmente (${pendingScans.length} pendiente(s))`, 'var(--primary-color)');
             };
 
             const handleFormSubmit = async (e) => {
@@ -234,10 +339,10 @@
                 ui.input.focus();
 
                 if (navigator.onLine) {
-                    updateStatus('Enviando...', 'orange');
+                    updateStatus('Enviando...', 'var(--status-syncing)');
                     try {
                         await sendData(scanObject);
-                        updateStatus(`Enviado: ${scanObject.value}`, 'green');
+                        updateStatus(`Enviado: ${scanObject.value}`, 'var(--status-success)');
                         // Intenta sincronizar por si había algo pendiente
                         setTimeout(syncPendingScans, 100);
                     } catch (error) {
