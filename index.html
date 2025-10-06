@@ -8,17 +8,17 @@
     <style>
         /* --- General & Variables --- */
         :root {
-            --primary-color: #007AFF; /* iOS Blue */
-            --secondary-color: #34C759; /* iOS Green */
-            --background-color: #F2F2F7;
+            --primary-color: #F99D1C; /* Particiones Orange */
+            --secondary-color: #2F241C; /* Particiones Brown */
+            --background-color: #FDFDFC;
             --header-background: #FFFFFF;
-            --text-color: #1C1C1E;
+            --text-color: #2F241C; /* Particiones Brown */
             --subtle-text-color: #8A8A8D;
-            --border-color: #C6C6C8;
-            --status-syncing: #FF9500; /* iOS Orange */
-            --status-error: #FF3B30;   /* iOS Red */
-            --status-success: #34C759; /* iOS Green */
-            --status-offline: #8A8A8D; /* iOS Gray */
+            --border-color: #EAEAEA;
+            --status-syncing: #F99D1C;
+            --status-error: #FF3B30;
+            --status-success: #34C759;
+            --status-offline: #8A8A8D;
         }
 
         body {
@@ -75,10 +75,10 @@
             width: 100%;
             max-width: 380px;
             margin-bottom: 15px;
-            border: none;
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             background-color: var(--header-background);
-            color: var(--primary-color);
+            color: var(--text-color);
             cursor: pointer;
             text-align: left;
             font-weight: 500;
@@ -86,11 +86,16 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
-        .menu-button:last-child {
-            color: var(--secondary-color);
+
+        .menu-button:hover {
+            background-color: #FAFAFA;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
         }
+
         .menu-button .icon {
+            color: var(--primary-color);
             font-size: 1.3rem;
             margin-right: 15px;
         }
@@ -149,7 +154,7 @@
         #scanInput:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+            box-shadow: 0 0 0 3px rgba(249, 157, 28, 0.3);
         }
         #status {
             font-size: 1rem;
@@ -168,8 +173,8 @@
             <div><span class="icon">📦</span>Escanear Ingreso</div>
             <span class="arrow">›</span>
         </button>
-        <button class="menu-button" data-mode="despacho">
-            <div><span class="icon">🚚</span>Escanear Despacho</div>
+        <button class="menu-button" data-mode="salida">
+            <div><span class="icon">🚚</span>Escanear Salida</div>
             <span class="arrow">›</span>
         </button>
     </div>
@@ -231,11 +236,11 @@
             const updateScannerUI = () => {
                 const titles = {
                     ingreso: 'Escanear Ingreso',
-                    despacho: 'Escanear Despacho'
+                    salida: 'Escanear Salida'
                 };
                 const placeholders = {
                     ingreso: 'Esperando código del producto...',
-                    despacho: 'Esperando tarja de despacho...'
+                    salida: 'Esperando tarja de salida...'
                 };
                 ui.scannerTitle.textContent = titles[appState.currentMode] || 'Escanear';
                 ui.input.placeholder = placeholders[appState.currentMode] || '';
