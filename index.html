@@ -213,6 +213,7 @@
             const appState = {
                 currentMode: '',
                 isSyncing: false,
+                wakeLockSentinel: null,
             };
 
             // --- LÓGICA DE NAVEGACIÓN ---
@@ -230,6 +231,9 @@
                     ui.input.focus();
                     updateScannerUI();
                     updateConnectionStatus();
+                    acquireWakeLock(); // Adquirir el wake lock
+                } else {
+                    releaseWakeLock(); // Liberar el wake lock
                 }
             };
 
@@ -244,6 +248,27 @@
                 };
                 ui.scannerTitle.textContent = titles[appState.currentMode] || 'Escanear';
                 ui.input.placeholder = placeholders[appState.currentMode] || '';
+            };
+
+            // --- LÓGICA DE WAKE LOCK ---
+            const acquireWakeLock = async () => {
+                if ('wakeLock' in navigator) {
+                    try {
+                        appState.wakeLockSentinel = await navigator.wakeLock.request('screen');
+                        appState.wakeLockSentinel.addEventListener('release', () => {
+                            appState.wakeLockSentinel = null;
+                        });
+                    } catch (err) {
+                        console.error(`Error al adquirir Wake Lock: ${err.name}, ${err.message}`);
+                    }
+                }
+            };
+
+            const releaseWakeLock = () => {
+                if (appState.wakeLockSentinel) {
+                    appState.wakeLockSentinel.release();
+                    appState.wakeLockSentinel = null;
+                }
             };
 
             // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN ---
@@ -380,6 +405,12 @@
                 ui.form.addEventListener('submit', handleFormSubmit);
                 window.addEventListener('online', updateConnectionStatus);
                 window.addEventListener('offline', updateConnectionStatus);
+
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible' && !ui.scannerPage.classList.contains('hidden')) {
+                        acquireWakeLock();
+                    }
+                });
 
                 // Estado inicial
                 history.replaceState({ page: 'menu' }, 'Menú', '#menu');
