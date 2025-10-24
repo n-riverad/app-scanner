@@ -228,7 +228,7 @@
                     if (addToHistory) {
                         history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
                     }
-                    ui.input.focus();
+                    setTimeout(() => ui.input.focus(), 100); // Envolvemos el focus en un timeout
                     updateScannerUI();
                     updateConnectionStatus();
                     acquireWakeLock(); // Adquirir el wake lock
