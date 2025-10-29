@@ -162,11 +162,23 @@
             font-weight: 500;
             transition: color 0.3s;
         }
+        #install-page p {
+            margin: 0 0 20px;
+            max-width: 380px;
+        }
     </style>
 </head>
 <body>
+    <div id="install-page" class="page hidden">
+        <img src="logo-particiones.jpg" alt="Logo de la Empresa" class="logo">
+        <h1>Instalar Aplicación</h1>
+        <p>Para la mejor experiencia, por favor instala la aplicación en tu dispositivo.</p>
+        <button id="install-button" class="menu-button" style="text-align: center; max-width: 300px; justify-content: center;">
+            Descargar
+        </button>
+    </div>
 
-    <div id="menu-page" class="page">
+    <div id="menu-page" class="page hidden">
         <img src="logo-particiones.jpg" alt="Logo de la Empresa" class="logo">
         <h1>Particiones Scanner</h1>
         <button class="menu-button" data-mode="ingreso">
@@ -201,6 +213,8 @@
             const ui = {
                 menuPage: document.getElementById('menu-page'),
                 scannerPage: document.getElementById('scanner-page'),
+                installPage: document.getElementById('install-page'),
+                installButton: document.getElementById('install-button'),
                 menuButtons: document.querySelectorAll('.menu-button'),
                 backButton: document.getElementById('go-back'),
                 form: document.getElementById('dataForm'),
@@ -214,6 +228,7 @@
                 currentMode: '',
                 isSyncing: false,
                 wakeLockSentinel: null,
+                deferredPrompt: null,
             };
 
             // --- LÓGICA DE NAVEGACIÓN ---
@@ -385,13 +400,42 @@
             };
 
             // --- INICIALIZACIÓN Y EVENT LISTENERS ---
+
+            const showInitialPage = () => {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                if (isStandalone) {
+                    ui.menuPage.classList.remove('hidden');
+                } else {
+                    ui.installPage.classList.remove('hidden');
+                }
+            };
+
             const init = () => {
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    appState.deferredPrompt = e;
+                    ui.installButton.style.display = 'block';
+                });
+                showInitialPage();
                 // Navegación
                 ui.menuButtons.forEach(button => {
                     button.addEventListener('click', () => {
                         appState.currentMode = button.getAttribute('data-mode');
                         navigateTo('scanner');
                     });
+                });
+
+                ui.installButton.addEventListener('click', async () => {
+                    if (appState.deferredPrompt) {
+                        appState.deferredPrompt.prompt();
+                        const { outcome } = await appState.deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            console.log('El usuario aceptó la instalación');
+                        } else {
+                            console.log('El usuario rechazó la instalación');
+                        }
+                        appState.deferredPrompt = null;
+                    }
                 });
 
                 ui.backButton.addEventListener('click', () => history.back());
