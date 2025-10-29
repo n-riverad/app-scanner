@@ -232,23 +232,25 @@
             };
 
             // --- LÓGICA DE NAVEGACIÓN ---
+            const showPage = (pageToShow) => {
+                [ui.installPage, ui.menuPage, ui.scannerPage].forEach(p => {
+                    p.classList.toggle('hidden', p !== pageToShow);
+                });
+            };
+
             const navigateTo = (page, addToHistory = true) => {
-                const pageToShow = page === 'scanner' ? ui.scannerPage : ui.menuPage;
-                const pageToHide = page === 'scanner' ? ui.menuPage : ui.scannerPage;
-
-                pageToHide.classList.add('hidden');
-                pageToShow.classList.remove('hidden');
-
                 if (page === 'scanner') {
+                    showPage(ui.scannerPage);
                     if (addToHistory) {
                         history.pushState({ page: 'scanner' }, 'Scanner', '#scanner');
                     }
-                    setTimeout(() => ui.input.focus(), 100); // Envolvemos el focus en un timeout
+                    setTimeout(() => ui.input.focus(), 100);
                     updateScannerUI();
                     updateConnectionStatus();
-                    acquireWakeLock(); // Adquirir el wake lock
-                } else {
-                    releaseWakeLock(); // Liberar el wake lock
+                    acquireWakeLock();
+                } else { // 'menu'
+                    showPage(ui.menuPage);
+                    releaseWakeLock();
                 }
             };
 
@@ -404,9 +406,9 @@
             const showInitialPage = () => {
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
                 if (isStandalone) {
-                    ui.menuPage.classList.remove('hidden');
+                    showPage(ui.menuPage);
                 } else {
-                    ui.installPage.classList.remove('hidden');
+                    showPage(ui.installPage);
                 }
             };
 
