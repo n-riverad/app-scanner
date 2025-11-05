@@ -166,6 +166,28 @@
             margin: 0 0 20px;
             max-width: 380px;
         }
+
+        /* --- Log Styles --- */
+        #log-container {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            text-align: left;
+            font-size: 0.8rem;
+        }
+        .log-entry {
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .log-entry:last-child {
+            border-bottom: none;
+        }
+
     </style>
 </head>
 <body>
@@ -201,6 +223,7 @@
                 <input type="text" id="scanInput" autofocus autocomplete="off">
             </form>
             <p id="status"></p>
+            <div id="log-container"></div>
         </div>
     </div>
 
@@ -221,6 +244,7 @@
                 input: document.getElementById('scanInput'),
                 status: document.getElementById('status'),
                 scannerTitle: document.getElementById('scanner-title'),
+                logContainer: document.getElementById('log-container'),
             };
 
             // --- ESTADO DE LA APLICACIÓN ---
@@ -265,6 +289,18 @@
                 };
                 ui.scannerTitle.textContent = titles[appState.currentMode] || 'Escanear';
                 ui.input.placeholder = placeholders[appState.currentMode] || '';
+            };
+
+            const addLogEntry = (scanObject) => {
+                const now = new Date();
+                const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+
+                const logEntry = document.createElement('div');
+                logEntry.classList.add('log-entry');
+                logEntry.textContent = `[${timestamp}] ${scanObject.type}: ${scanObject.value}`;
+
+                ui.logContainer.appendChild(logEntry);
+                ui.logContainer.scrollTop = ui.logContainer.scrollHeight; // Auto-scroll to bottom
             };
 
             // --- LÓGICA DE WAKE LOCK ---
@@ -381,6 +417,7 @@
 
                 // Añadimos un timestamp para identificar unívocamente cada escaneo
                 const scanObject = { value: scannedValue, type: appState.currentMode, timestamp: new Date().toISOString() };
+                addLogEntry(scanObject);
 
                 ui.input.value = '';
                 ui.input.focus();
