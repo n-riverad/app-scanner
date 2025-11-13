@@ -272,6 +272,7 @@
                     updateScannerUI();
                     updateConnectionStatus();
                     acquireWakeLock();
+                    displayLog();
                 } else { // 'menu'
                     showPage(ui.menuPage);
                     releaseWakeLock();
@@ -291,9 +292,31 @@
                 ui.input.placeholder = placeholders[appState.currentMode] || '';
             };
 
+            const displayLog = () => {
+                ui.logContainer.innerHTML = '';
+                const logEntries = getLogEntries();
+                const twelveHoursAgo = new Date().getTime() - (12 * 60 * 60 * 1000);
+                const recentEntries = logEntries.filter(entry => new Date(entry.timestamp).getTime() >= twelveHoursAgo);
+                saveLogEntries(recentEntries);
+
+                recentEntries.forEach(scanObject => {
+                    const entryDate = new Date(scanObject.timestamp);
+                    const timestamp = `${entryDate.getHours().toString().padStart(2, '0')}:${entryDate.getMinutes().toString().padStart(2, '0')}:${entryDate.getSeconds().toString().padStart(2, '0')}`;
+                    const logEntry = document.createElement('div');
+                    logEntry.classList.add('log-entry');
+                    logEntry.textContent = `[${timestamp}] ${scanObject.type}: ${scanObject.value}`;
+                    ui.logContainer.appendChild(logEntry);
+                });
+                ui.logContainer.scrollTop = ui.logContainer.scrollHeight;
+            };
+
             const addLogEntry = (scanObject) => {
-                const now = new Date();
-                const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                const logEntries = getLogEntries();
+                logEntries.push(scanObject);
+                saveLogEntries(logEntries);
+
+                const entryDate = new Date(scanObject.timestamp);
+                const timestamp = `${entryDate.getHours().toString().padStart(2, '0')}:${entryDate.getMinutes().toString().padStart(2, '0')}:${entryDate.getSeconds().toString().padStart(2, '0')}`;
 
                 const logEntry = document.createElement('div');
                 logEntry.classList.add('log-entry');
@@ -327,6 +350,8 @@
             // --- LÓGICA DE CONEXIÓN Y SINCRONIZACIÓN ---
             const getPendingScans = () => JSON.parse(localStorage.getItem('pendingScans')) || [];
             const setPendingScans = (scans) => localStorage.setItem('pendingScans', JSON.stringify(scans));
+            const getLogEntries = () => JSON.parse(localStorage.getItem('logEntries')) || [];
+            const saveLogEntries = (logEntries) => localStorage.setItem('logEntries', JSON.stringify(logEntries));
 
             const updateStatus = (message, color) => {
                 ui.status.textContent = message;
