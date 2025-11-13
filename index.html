@@ -207,6 +207,10 @@
             <div><span class="icon">📥</span>Escanear Ingreso</div>
             <span class="arrow">›</span>
         </button>
+        <button class="menu-button" data-mode="lamina">
+            <div><span class="icon">📦</span>Registro Laminas</div>
+            <span class="arrow">›</span>
+        </button>
         <button class="menu-button" data-mode="salida">
             <div><span class="icon">📤</span>Escanear Salida</div>
             <span class="arrow">›</span>
@@ -281,11 +285,13 @@
             const updateScannerUI = () => {
                 const titles = {
                     ingreso: 'Escanear Ingreso',
-                    salida: 'Escanear Salida'
+                    salida: 'Escanear Salida',
+                    lamina: 'Escanear Lamina'
                 };
                 const placeholders = {
                     ingreso: 'Esperando código de producto...',
-                    salida: 'Esperando código de producto...'
+                    salida: 'Esperando código de producto...',
+                    lamina: 'Esperando código de lamina...'
                 };
                 ui.scannerTitle.textContent = titles[appState.currentMode] || 'Escanear';
                 ui.input.placeholder = placeholders[appState.currentMode] || '';
